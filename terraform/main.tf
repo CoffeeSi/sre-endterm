@@ -5,7 +5,7 @@ provider "aws" {
   secret_key = var.aws_secret_key
 }
 
-resource "aws_instance" "assignment_instance" {
+resource "aws_instance" "endterm_instance" {
   ami           = var.ami_id
   instance_type = var.instance_type
   key_name = var.key_name
@@ -19,34 +19,8 @@ resource "aws_instance" "assignment_instance" {
     volume_type = "gp3"
   }
 
-  provisioner "file" {
-    source      = "docker-deploy.sh"
-    destination = "/tmp/docker-deploy.sh"
-    
-    connection {
-      type        = "ssh"
-      user        = var.ssh_user
-      private_key = file(var.ssh_private_key)
-      host        = self.public_ip
-    }
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "chmod +x /tmp/docker-deploy.sh",
-      "sudo /tmp/docker-deploy.sh",
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = var.ssh_user
-      private_key = file(var.ssh_private_key)
-      host        = self.public_ip
-    }
-  }
-
   tags = {
-    Name = "AssignmentInstance"
+    Name = "EndtermInstance"
   }
 }
 
