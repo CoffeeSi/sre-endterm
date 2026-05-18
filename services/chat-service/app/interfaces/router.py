@@ -21,9 +21,7 @@ async def health() -> dict:
     return {"service": "chat-service", "status": "ok"}
 
 
-@router.post(
-    "/rooms/{room}/messages", response_model=SendMessageResponse, status_code=201
-)
+@router.post("/{room}/messages", response_model=SendMessageResponse, status_code=201)
 async def send_message(
     room: str,
     payload: MessageCreate,
@@ -38,7 +36,7 @@ async def send_message(
     )
 
 
-@router.get("/rooms/{room}/messages", response_model=RoomMessagesResponse)
+@router.get("/{room}/messages", response_model=RoomMessagesResponse)
 async def get_messages(
     room: str,
     limit: int = 50,

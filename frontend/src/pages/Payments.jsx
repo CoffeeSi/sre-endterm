@@ -7,10 +7,10 @@ export default function Payments() {
     const [orders, setOrders] = useState([])
     const [loading, setLoading] = useState(true)
     const [selectedOrder, setSelectedOrder] = useState('')
-    const [amount, setAmount] = useState('')
     const [method, setMethod] = useState('card')
     const [creating, setCreating] = useState(false)
     const [error, setError] = useState('')
+    const selectedOrderData = orders.find(order => String(order.id) === String(selectedOrder))
 
     useEffect(() => {
         loadPayments()
@@ -42,16 +42,15 @@ export default function Payments() {
 
     async function handleCreatePayment(e) {
         e.preventDefault()
-        if (!selectedOrder || !amount) {
-            setError('Please select order and enter amount')
+        if (!selectedOrderData) {
+            setError('Please select an order')
             return
         }
 
         try {
             setCreating(true)
-            await createPayment(parseInt(selectedOrder), parseFloat(amount), 'KZT', method)
+            await createPayment(parseInt(selectedOrderData.id, 10), Number(selectedOrderData.total_price), 'KZT', method)
             setSelectedOrder('')
-            setAmount('')
             setMethod('card')
             setError('')
             loadPayments()
@@ -126,15 +125,10 @@ export default function Payments() {
                     </div>
 
                     <div>
-                        <label style={{ display: 'block', marginBottom: '4px' }}>Amount (KZT)</label>
-                        <input
-                            type="number"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            placeholder="Enter amount"
-                            step="0.01"
-                            style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', boxSizing: 'border-box' }}
-                        />
+                        <label style={{ display: 'block', marginBottom: '4px' }}>Amount</label>
+                        <div style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd', background: '#fafafa' }}>
+                            {selectedOrderData ? `${selectedOrderData.total_price} KZT` : 'Select an order to see the amount'}
+                        </div>
                     </div>
 
                     <div>
