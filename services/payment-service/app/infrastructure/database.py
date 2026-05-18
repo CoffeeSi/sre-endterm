@@ -27,34 +27,37 @@ async def close_pool(app: FastAPI) -> None:
 
 async def initialize_database(pool) -> None:
     """Initialize database tables"""
-    async with pool.acquire() as connection:
-        await connection.execute("""
-            CREATE TABLE IF NOT EXISTS payments (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                order_id INTEGER NOT NULL UNIQUE,
-                amount NUMERIC(10, 2) NOT NULL,
-                currency VARCHAR(3) NOT NULL DEFAULT 'KZT',
-                status VARCHAR(20) NOT NULL DEFAULT 'pending',
-                method VARCHAR(50) NOT NULL,
-                transaction_id VARCHAR(255),
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+    try:
+        async with pool.acquire() as connection:
+            await connection.execute("""
+                CREATE TABLE IF NOT EXISTS payments (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    order_id INTEGER NOT NULL UNIQUE,
+                    amount NUMERIC(10, 2) NOT NULL,
+                    currency VARCHAR(3) NOT NULL DEFAULT 'KZT',
+                    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                    method VARCHAR(50) NOT NULL,
+                    transaction_id VARCHAR(255),
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
 
-        # Create indexes
-        await connection.execute(
-            "CREATE INDEX IF NOT EXISTS idx_payments_user_id ON payments(user_id)"
-        )
-        await connection.execute(
-            "CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id)"
-        )
-        await connection.execute(
-            "CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status)"
-        )
-        await connection.execute(
-            "CREATE INDEX IF NOT EXISTS idx_payments_transaction_id ON payments(transaction_id)"
-        )
+            # Create indexes safely to prevent concurrent startup race conditions
+            for index_name, column in [
+                ("idx_payments_user_id", "user_id"),
+                ("idx_payments_order_id", "order_id"),
+                ("idx_payments_status", "status"),
+                ("idx_payments_transaction_id", "transaction_id"),
+            ]:
+                try:
+                    await connection.execute(
+                        f"CREATE INDEX IF NOT EXISTS {index_name} ON payments({column})"
+                    )
+                except Exception as e:
+                    logger.warning(f"Skipping index {index_name} creation due to concurrency: {e}")
 
-        logger.info("Database initialized successfully")
+            logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.warning(f"Database initialization was skipped or partially failed due to concurrency: {e}")

@@ -3,16 +3,18 @@ kind: ConfigMap
 metadata:
   name: endterm-config
 data:
-  DATABASE_URL: "postgresql+asyncpg://user:password@postgres:5432/app_db"
-  REDIS_URL: "redis://redis:6379/0"
-  AUTH_SERVICE_URL: "http://auth-service:8000"
-  USER_SERVICE_URL: "http://user-service:8001"
-  PRODUCT_SERVICE_URL: "http://product-service:8002"
-  ORDER_SERVICE_URL: "http://order-service:8003"
-  PAYMENT_SERVICE_URL: "http://payment-service:8004"
-  CHAT_SERVICE_URL: "http://chat-service:8005"
-  API_GATEWAY_URL: "http://api-gateway:8080"
-  FRONTEND_URL: "http://frontend:80"
+  DATABASE_URL: "postgresql+asyncpg://user:password@postgres.default.svc.cluster.local:5432/app_db"
+  REDIS_URL: "redis://redis.default.svc.cluster.local:6379/0"
+  AUTH_SERVICE_URL: "http://auth-service.default.svc.cluster.local:8000"
+  USER_SERVICE_URL: "http://user-service.default.svc.cluster.local:8001"
+  PRODUCT_SERVICE_URL: "http://product-service.default.svc.cluster.local:8002"
+  ORDER_SERVICE_URL: "http://order-service.default.svc.cluster.local:8003"
+  PAYMENT_SERVICE_URL: "http://payment-service.default.svc.cluster.local:8004"
+  CHAT_SERVICE_URL: "http://chat-service.default.svc.cluster.local:8005"
+  API_GATEWAY_URL: "http://api-gateway.default.svc.cluster.local:8080"
+  FRONTEND_URL: "http://frontend.default.svc.cluster.local:80"
+
+  VITE_HOST_IP: "http://api-gateway.default.svc.cluster.local:8080"
 
   JWT_SECRET_KEY: "secret-key"
   JWT_ALGORITHM: "HS256"

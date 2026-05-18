@@ -1,4 +1,5 @@
 from typing import Annotated
+import os
 
 import jwt
 from fastapi import Depends, HTTPException, Request
@@ -11,7 +12,7 @@ from app.application.use_cases import (
 )
 from app.infrastructure.repositories import PaymentRepository
 
-SECRET_KEY = "your-secret-key"  # Should be in environment variable
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key")
 
 
 async def get_current_user_id(request: Request) -> int:
@@ -25,11 +26,11 @@ async def get_current_user_id(request: Request) -> int:
     token = auth_header.split(" ")[1]
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        user_id: int = payload.get("sub")
-        if user_id is None:
+        sub = payload.get("sub")
+        if sub is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-        return user_id
-    except jwt.InvalidTokenError:
+        return int(sub)
+    except (jwt.InvalidTokenError, ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid token")
 
 

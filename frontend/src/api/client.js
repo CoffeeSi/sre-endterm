@@ -1,6 +1,9 @@
 import axios from 'axios'
 
-const BACKEND_URL = import.meta.env.VITE_HOST_IP || `http://${window.location.hostname}:8080`;
+const rawHostIp = import.meta.env.VITE_HOST_IP;
+const BACKEND_URL = (rawHostIp && rawHostIp !== 'http://:8080' && rawHostIp.trim() !== '')
+  ? rawHostIp
+  : `http://${window.location.hostname}:8080`;
 
 function makeClient(baseURL) {
   const client = axios.create({ baseURL })

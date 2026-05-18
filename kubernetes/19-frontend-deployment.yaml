@@ -19,11 +19,11 @@ spec:
         ports:
         - containerPort: 80
         env:
-        - name: SERVICE_PORT
+        - name: VITE_HOST_IP
           valueFrom:
             configMapKeyRef:
               name: endterm-config
-              key: FRONTEND_PORT
+              key: VITE_HOST_IP
         envFrom:
         - configMapRef:
             name: endterm-config
