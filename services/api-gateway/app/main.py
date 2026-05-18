@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 from contextlib import asynccontextmanager
+from urllib.parse import urlparse, urlunparse
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
@@ -55,6 +56,27 @@ _HOP_BY_HOP = frozenset(
 
 
 _UPSTREAM_TIMEOUT = float(os.getenv("UPSTREAM_TIMEOUT", "30"))
+
+
+def _fallback_upstream_url(upstream: str) -> str | None:
+    """Build a short-service-name fallback URL for Kubernetes FQDN upstreams."""
+    try:
+        parsed = urlparse(upstream)
+        host = parsed.hostname or ""
+        if ".svc.cluster.local" not in host:
+            return None
+
+        short_host = host.split(".", 1)[0]
+        if not short_host:
+            return None
+
+        netloc = short_host
+        if parsed.port:
+            netloc = f"{short_host}:{parsed.port}"
+
+        return urlunparse((parsed.scheme, netloc, "", "", "", ""))
+    except Exception:
+        return None
 
 
 @asynccontextmanager
@@ -185,10 +207,37 @@ async def proxy(request: Request, full_path: str) -> Response:
                 content=body,
             )
         except httpx.RequestError as exc:
-            logger.error("upstream request failed", extra={"error": str(exc)})
-            raise HTTPException(
-                status_code=502, detail="Bad gateway: upstream service unavailable"
-            )
+            fallback_upstream = _fallback_upstream_url(upstream)
+            if fallback_upstream:
+                fallback_url = (
+                    fallback_upstream + upstream_path + (f"?{query}" if query else "")
+                )
+                try:
+                    logger.warning(
+                        "retrying upstream with fallback host",
+                        extra={
+                            "upstream": upstream,
+                            "fallback_upstream": fallback_upstream,
+                            "path": path,
+                        },
+                    )
+                    upstream_response = await request.app.state.http_client.request(
+                        method=request.method,
+                        url=fallback_url,
+                        headers=forward_headers,
+                        content=body,
+                    )
+                except httpx.RequestError:
+                    logger.error("upstream request failed", extra={"error": str(exc)})
+                    raise HTTPException(
+                        status_code=502,
+                        detail="Bad gateway: upstream service unavailable",
+                    )
+            else:
+                logger.error("upstream request failed", extra={"error": str(exc)})
+                raise HTTPException(
+                    status_code=502, detail="Bad gateway: upstream service unavailable"
+                )
 
     REQUEST_COUNT.labels(
         method=request.method,

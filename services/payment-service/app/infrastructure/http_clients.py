@@ -1,11 +1,12 @@
 import logging
+import os
 from typing import Optional
 
 import aiohttp
 
 logger = logging.getLogger(__name__)
 
-ORDER_SERVICE_URL = "http://order-service:8000"
+ORDER_SERVICE_URL = os.getenv("ORDER_SERVICE_URL", "http://order-service:8003")
 
 
 async def get_order_details(order_id: int, user_id: int) -> Optional[dict]:
